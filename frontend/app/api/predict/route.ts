@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
@@ -11,6 +10,7 @@ interface PredictionResult {
   smiles: string;
   density?: number;
   error_density?: number;
+  volume?: number;
   image?: string; // base64 encoded image
   error?: string;
 }
@@ -103,20 +103,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure all fields are present, providing defaults if necessary
-        const processedResults = results.map((item: any) => ({
-          // compound: item.compound || 'N/A',
-          smiles: item.smiles || 'N/A',
-          image: item.image,
-          density: item.density,
-          error_density: item.error_density,
-          volume: item.volume,
-          error: item.error,
-        }));
+    const processedResults = results.map((item: any) => ({
+      compound: item.compound || 'N/A', // FIXED: Uncommented this line
+      smiles: item.smiles || 'N/A',
+      image: item.image,
+      density: item.density,
+      error_density: item.error_density,
+      volume: item.volume,
+      error: item.error,
+    }));
 
-        return NextResponse.json(processedResults);
+    return NextResponse.json(processedResults);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-}
+} 
