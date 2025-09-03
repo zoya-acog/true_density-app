@@ -1,0 +1,4 @@
+requests
+rdkit-pypi
+gunicorn
+Flask

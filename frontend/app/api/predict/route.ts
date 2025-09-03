@@ -6,7 +6,7 @@ import os from 'os';
 
 // Define the structure of the prediction results
 interface PredictionResult {
-  compound: string;
+  compound?: string; // Optional for single SMILES
   smiles: string;
   density?: number;
   error_density?: number;
@@ -15,13 +15,11 @@ interface PredictionResult {
   error?: string;
 }
 
-// Path to the Python executable in the conda environment
-// IMPORTANT: This path might need to be adjusted depending on the installation
-const PYTHON_EXECUTABLE = '/home/zoya/miniconda3/envs/chem/bin/python';
+// Path to the Python executable, 'python3' should be in the system's PATH in the Docker container
+const PYTHON_EXECUTABLE = 'python3';
 
-// Path to the CLI script
-// We resolve this path relative to the current file's location
-const CLI_SCRIPT_PATH = path.resolve(process.cwd(), '../True_density/cli.py');
+// Path to the CLI script, resolved from the current working directory
+const CLI_SCRIPT_PATH = path.resolve(process.cwd(), 'True_density/cli.py');
 
 async function runCliProcess(args: string[]): Promise<PredictionResult[]> {
   return new Promise((resolve, reject) => {
@@ -102,16 +100,21 @@ export async function POST(req: NextRequest) {
         await fs.unlink(tempFilePath);
     }
 
-    // Ensure all fields are present, providing defaults if necessary
-    const processedResults = results.map((item: any) => ({
-      compound: item.compound || 'N/A', // FIXED: Uncommented this line
-      smiles: item.smiles || 'N/A',
-      image: item.image,
-      density: item.density,
-      error_density: item.error_density,
-      volume: item.volume,
-      error: item.error,
-    }));
+    // Ensure all fields are present, excluding compound for single SMILES
+    const processedResults = results.map((item: any, index) => {
+      const result: PredictionResult = {
+        smiles: item.smiles || 'N/A',
+        image: item.image,
+        density: item.density,
+        error_density: item.error_density,
+        volume: item.volume,
+        error: item.error,
+      };
+      if (inputType !== 'smiles') {
+        result.compound = item.compound || `Molecule_${index + 1}`;
+      }
+      return result;
+    });
 
     return NextResponse.json(processedResults);
 
@@ -119,4 +122,4 @@ export async function POST(req: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-} 
+}
